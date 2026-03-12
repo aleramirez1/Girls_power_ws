@@ -3,19 +3,19 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+
 	"ws-server/internal/alerts/application"
 	"ws-server/internal/alerts/infrastructure"
 )
 
 func main() {
+	jwtSecret := os.Getenv("JWT_SECRET")
 
-	apiClient := &infrastructure.RESTClient{BaseURL: "http://localhost:8080/api/v1"}
-	wsHub := &infrastructure.Hub{Clients: make(map[int]*infrastructure.ConnectedClient)}
+	hub := infrastructure.NewHub()
+	processAlertUC := application.NewProcessAlertUseCase(hub)
+	alertHandler := infrastructure.NewAlertHandler(processAlertUC, hub, jwtSecret)
 
-	processAlertUC := application.NewProcessAlertUseCase(apiClient, wsHub)
-
-	alertHandler := infrastructure.NewAlertHandler(processAlertUC)
-	
 	mux := http.NewServeMux()
 	infrastructure.RegisterRoutes(mux, alertHandler)
 
